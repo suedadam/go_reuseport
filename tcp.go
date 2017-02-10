@@ -89,54 +89,54 @@ func determineTCPProto(proto string, ip *net.TCPAddr) (string, error) {
 
 // NewReusablePortListener returns net.FileListener that created from
 // a file discriptor for a socket with SO_REUSEPORT option.
-func NewReusablePortListener(proto, addr string) (l net.Listener, err error) {
+func NewReusablePortListener(proto, addr string) (l net.Listener, file *os.File, err error) {
 	var (
 		soType, fd int
-		file       *os.File
+		// file       *os.File
 		sockaddr   syscall.Sockaddr
 	)
 
 	if sockaddr, soType, err = getSockaddr(proto, addr); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	syscall.ForkLock.RLock()
 	if fd, err = syscall.Socket(soType, syscall.SOCK_STREAM, syscall.IPPROTO_TCP); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	syscall.ForkLock.RUnlock()
 
 	if err = syscall.SetsockoptInt(fd, syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1); err != nil {
 		syscall.Close(fd)
-		return nil, err
+		return nil, nil, err
 	}
 
 	if err = syscall.SetsockoptInt(fd, syscall.SOL_SOCKET, reusePort, 1); err != nil {
 		syscall.Close(fd)
-		return nil, err
+		return nil, nil, err
 	}
 
 	if err = syscall.Bind(fd, sockaddr); err != nil {
 		syscall.Close(fd)
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Set backlog size to the maximum
 	if err = syscall.Listen(fd, listenerBacklogMaxSize); err != nil {
 		syscall.Close(fd)
-		return nil, err
+		return nil, nil, err
 	}
 
 	file = os.NewFile(uintptr(fd), getSocketFileName(proto, addr))
 	if l, err = net.FileListener(file); err != nil {
 		syscall.Close(fd)
-		return nil, err
+		return nil, nil, err
 	}
 
 	if err = file.Close(); err != nil {
 		syscall.Close(fd)
-		return nil, err
+		return nil, nil, err
 	}
 
-	return l, err
+	return l, file, err
 }

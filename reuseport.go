@@ -40,9 +40,12 @@ func getSocketFileName(proto, addr string) string {
 }
 
 // Listen function is an alias for NewReusablePortListener.
-func Listen(proto, addr string) (l net.Listener, err error) {
-	return NewReusablePortListener(proto, addr)
-}
+
+//TODO: Fix this later, too many arguments to return
+
+// func Listen(proto, addr string) (l net.Listener, err error) {
+// 	return NewReusablePortListener(proto, addr)
+// }
 
 // ListenPacket is an alias for NewReusablePortPacketConn.
 func ListenPacket(proto, addr string) (l net.PacketConn, err error) {
